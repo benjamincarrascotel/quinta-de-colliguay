@@ -1,0 +1,39 @@
+# ============================================
+# Caddy Configuration
+# Reverse proxy with automatic HTTPS
+# ============================================
+
+{
+    # Global options
+    auto_https off
+    admin off
+}
+
+:80 {
+    # API routes
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    # Frontend (SPA)
+    handle {
+        reverse_proxy frontend:80
+    }
+
+    # Logging
+    log {
+        output stdout
+        format json
+    }
+}
+
+# For production with domain:
+# your-domain.com {
+#     handle /api/* {
+#         reverse_proxy backend:8000
+#     }
+#
+#     handle {
+#         reverse_proxy frontend:80
+#     }
+# }

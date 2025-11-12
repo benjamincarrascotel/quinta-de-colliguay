@@ -1,0 +1,112 @@
+version: '3.8'
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: quinta-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: quinta_colliguay
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - quinta-network
+
+  # ============================================
+  # Backend (Node.js + Express + Prisma)
+  # ============================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: quinta-backend
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      DATABASE_URL: postgresql://postgres:secret@postgres:5432/quinta_colliguay?schema=public
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
+      ALLOWED_ORIGINS: http://localhost,http://localhost:3000
+      # Email config
+      SMTP_HOST: ${SMTP_HOST:-smtp.mailtrap.io}
+      SMTP_PORT: ${SMTP_PORT:-2525}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASSWORD: ${SMTP_PASSWORD}
+      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-reservas@quintacolliguay.cl}
+      MAIL_FROM_NAME: "Quinta de Colliguay"
+      # Admin
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quintacolliguay.cl}
+      ADMIN_WHATSAPP: ${ADMIN_WHATSAPP:-912345678}
+      # Reservation params
+      RESERVATION_ADULT_PRICE: 20000
+      RESERVATION_CHILD_PRICE: 10000
+      RESERVATION_MIN_ADULTS: 20
+      RESERVATION_MAX_TOTAL: 60
+      RESERVATION_MIN_NIGHTS: 2
+      RESERVATION_BUFFER_HALF_DAY: true
+      TZ: America/Santiago
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/logs:/app/logs
+    networks:
+      - quinta-network
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed && npm start"
+
+  # ============================================
+  # Frontend (React + Vite)
+  # ============================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: quinta-frontend
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - quinta-network
+
+  # ============================================
+  # Reverse Proxy (Caddy)
+  # ============================================
+  caddy:
+    image: caddy:2-alpine
+    container_name: quinta-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - quinta-network
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  quinta-network:
+    driver: bridge
