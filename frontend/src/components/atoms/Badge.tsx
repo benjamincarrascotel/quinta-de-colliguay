@@ -1,6 +1,6 @@
 import { HTMLAttributes } from 'react';
 import { cn } from '@utils/helpers';
-import { ReservationStatus } from '@types/index';
+import type { ReservationStatus } from '@/types/index';
 
 // ============================================
 // BADGE - Componente base abstracto

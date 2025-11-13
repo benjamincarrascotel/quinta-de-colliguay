@@ -1,4 +1,3 @@
-import { useState, useEffect } from 'react';
 import { Button } from '@atoms/Button';
 import { cn } from '@utils/helpers';
 import { DEFAULT_PARAMETERS, VALIDATION_MESSAGES } from '@utils/constants';

@@ -1,7 +1,7 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useQuery } from './useApi';
 import { reservationService } from '@services/reservationService';
-import { AvailabilityRange, DateAvailability, BlockType } from '@types/index';
+import type { AvailabilityRange, DateAvailability, BlockType } from '@/types/index';
 import { formatDateToChile } from '@utils/helpers';
 
 // ============================================

@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from 'react';
 import { useLocalStorage } from './useLocalStorage';
-import { ReservationFormData, FormStep, BlockType, ValidationResult, ValidationError } from '@types/index';
+import type { ReservationFormData, FormStep, BlockType, ValidationResult, ValidationError } from '@/types/index';
 import {
   calculateDuration,
   calculatePrice,

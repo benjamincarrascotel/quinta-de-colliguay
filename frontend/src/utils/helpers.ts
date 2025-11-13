@@ -1,6 +1,7 @@
 import { formatInTimeZone } from 'date-fns-tz';
 import { differenceInDays, parseISO, isBefore, isAfter, isEqual } from 'date-fns';
-import { BlockType } from '@types/index';
+import { es } from 'date-fns/locale';
+import type { BlockType } from '@/types/index';
 import { TIMEZONE } from './constants';
 
 // ============================================
@@ -20,7 +21,7 @@ export function formatDateToChile(date: Date | string): string {
  */
 export function formatDateToReadable(date: Date | string): string {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  return formatInTimeZone(dateObj, TIMEZONE, "EEEE d 'de' MMMM, yyyy", { locale: require('date-fns/locale/es') });
+  return formatInTimeZone(dateObj, TIMEZONE, "EEEE d 'de' MMMM, yyyy", { locale: es });
 }
 
 /**

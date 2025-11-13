@@ -1,5 +1,5 @@
 import { cn, formatCurrency } from '@utils/helpers';
-import { PriceBreakdown } from '@types/index';
+import type { PriceBreakdown } from '@/types/index';
 
 // ============================================
 // PRICE DISPLAY - Componente abstracto para mostrar precios

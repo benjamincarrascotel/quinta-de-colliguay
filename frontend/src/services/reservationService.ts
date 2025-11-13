@@ -1,11 +1,11 @@
 import { apiClient } from './api';
-import {
+import type {
   Reservation,
   ReservationInput,
   AvailabilityRange,
   SystemParameters,
   ApiResponse,
-} from '@types/index';
+} from '@/types/index';
 import { API_ENDPOINTS } from '@utils/constants';
 
 // ============================================

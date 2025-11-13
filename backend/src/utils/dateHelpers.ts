@@ -1,5 +1,5 @@
 import { format, parseISO, differenceInDays, isBefore, isAfter, isEqual, addDays } from 'date-fns';
-import { toZonedTime, formatInTimeZone } from 'date-fns-tz';
+import { utcToZonedTime, formatInTimeZone } from 'date-fns-tz';
 import { Block } from '@prisma/client';
 
 const TIMEZONE = 'America/Santiago';
@@ -15,7 +15,7 @@ export const formatDateToChile = (date: Date | string): string => {
 
 export const formatDateToReadable = (date: Date | string): string => {
   const dateObj = typeof date === 'string' ? parseISO(date) : date;
-  const zonedDate = toZonedTime(dateObj, TIMEZONE);
+  const zonedDate = utcToZonedTime(dateObj, TIMEZONE);
   return format(zonedDate, "EEEE d 'de' MMMM, yyyy", { locale: require('date-fns/locale/es') });
 };
 

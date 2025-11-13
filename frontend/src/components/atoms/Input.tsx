@@ -57,8 +57,8 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               'input-base',
               variantStyles[variant],
               sizeStyles[inputSize],
-              leftIcon && 'pl-10',
-              rightIcon && 'pr-10',
+              leftIcon ? 'pl-10' : '',
+              rightIcon ? 'pr-10' : '',
               fullWidth && 'w-full',
               className
             )}

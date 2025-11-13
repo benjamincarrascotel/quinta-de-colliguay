@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ApiError } from '@types/index';
+import type { ApiError } from '@/types/index';
 
 // ============================================
 // USE API - Hook abstracto genérico para llamadas API
@@ -61,7 +61,8 @@ export function useApi<T, P extends any[] = any[]>(
   // Auto-fetch si está habilitado
   useEffect(() => {
     if (autoFetch) {
-      execute([] as unknown as P[0] extends never ? [] : P);
+      // @ts-ignore - Complex generic type for empty parameters
+      execute();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -103,7 +104,7 @@ export interface UseQueryOptions<T> extends UseApiOptions<T> {
 }
 
 export function useQuery<T>(
-  queryKey: string,
+  _queryKey: string,
   apiFunction: () => Promise<T>,
   options: UseQueryOptions<T> = {}
 ): UseApiResult<T, []> & { refetch: () => Promise<void> } {
