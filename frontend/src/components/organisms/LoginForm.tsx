@@ -68,7 +68,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
 
         {/* Error Alert */}
         {authError && (
-          <Alert variant="error" className="mb-6" onClose={clearError}>
+          <Alert variant="error" className="mb-6" onDismiss={clearError} dismissible={true}>
             {authError}
           </Alert>
         )}

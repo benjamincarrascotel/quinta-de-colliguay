@@ -1,0 +1,22 @@
+const infoItems = {
+  capacidad: [
+    { title: "Mínimo", description: "20 adultos" },
+    { title: "Máximo", description: "60 personas total" },
+    { title: "Niños", description: "hasta 10 años" }
+  ],
+  precios: [
+    { title: "Adulto", description: "$20.000/día" },
+    { title: "Niño", description: "$10.000/día" },
+    { title: "Medio día", description: "50% tarifa" }
+  ],
+  estadia: [
+    { title: "Mínimo", description: "2 noches" },
+    { title: "Check-in", description: "Mañana o Noche" },
+    { title: "Buffer", description: "de limpieza incluido" }
+  ],
+  ubicacion: [
+    { title: "Ciudad", description: "Colliguay" },
+    { title: "Región", description: "de Valparaíso" },
+    { title: "Entorno", description: "natural" }
+  ]
+};

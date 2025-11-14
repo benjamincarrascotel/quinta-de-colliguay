@@ -24,8 +24,8 @@ interface CalendarEvent {
   borderColor: string;
   textColor: string;
   extendedProps?: {
-    morningAvailable?: boolean;
-    nightAvailable?: boolean;
+    morning_available?: boolean;
+    night_available?: boolean;
     type?: 'availability' | 'reservation';
   };
 }
@@ -47,9 +47,9 @@ const Calendar = ({ onDateSelect, selectable = true, adminView = false }: Calend
   // Convert availability data to FullCalendar events
   useEffect(() => {
     const calendarEvents: CalendarEvent[] = availability.map((dateAvail) => {
-      const isFullyAvailable = dateAvail.morningAvailable && dateAvail.nightAvailable;
-      const isPartiallyAvailable = dateAvail.morningAvailable || dateAvail.nightAvailable;
-      const isUnavailable = !dateAvail.morningAvailable && !dateAvail.nightAvailable;
+      const isFullyAvailable = dateAvail.morning_available && dateAvail.night_available;
+      const isPartiallyAvailable = dateAvail.morning_available || dateAvail.night_available;
+      const isUnavailable = !dateAvail.morning_available && !dateAvail.night_available;
 
       let backgroundColor = '#10b981'; // green-500 (available)
       let borderColor = '#059669'; // green-600
@@ -73,8 +73,8 @@ const Calendar = ({ onDateSelect, selectable = true, adminView = false }: Calend
         borderColor,
         textColor: '#ffffff',
         extendedProps: {
-          morningAvailable: dateAvail.morningAvailable,
-          nightAvailable: dateAvail.nightAvailable,
+          morning_available: dateAvail.morning_available,
+          night_available: dateAvail.night_available,
           type: 'availability',
         },
       };
@@ -150,16 +150,16 @@ const Calendar = ({ onDateSelect, selectable = true, adminView = false }: Calend
 
   // Custom event content
   const renderEventContent = (eventInfo: EventContentArg) => {
-    const { morningAvailable, nightAvailable } = eventInfo.event.extendedProps;
+    const { morning_available, night_available } = eventInfo.event.extendedProps;
 
     return (
       <div className="p-1 text-xs">
         <div className="font-semibold">{eventInfo.event.title}</div>
         {!adminView && (
           <div className="mt-0.5 text-[10px] opacity-90">
-            {morningAvailable && nightAvailable && '🌅 🌙'}
-            {morningAvailable && !nightAvailable && '🌅'}
-            {!morningAvailable && nightAvailable && '🌙'}
+            {morning_available && night_available && '🌅 🌙'}
+            {morning_available && !night_available && '🌅'}
+            {!morning_available && night_available && '🌙'}
           </div>
         )}
       </div>

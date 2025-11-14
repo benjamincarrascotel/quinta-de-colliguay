@@ -10,9 +10,9 @@ interface ReservationFilters {
 
 interface PaginationMeta {
   page: number;
-  limit: number;
+  per_page: number;
   total: number;
-  totalPages: number;
+  last_page: number;
 }
 
 interface ReservationState {
@@ -51,9 +51,9 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
   filters: {},
   pagination: {
     page: 1,
-    limit: 10,
+    per_page: 10,
     total: 0,
-    totalPages: 0,
+    last_page: 0,
   },
   isLoading: false,
   error: null,
@@ -68,7 +68,7 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
 
       const queryParams = new URLSearchParams({
         page: page.toString(),
-        limit: limit.toString(),
+        per_page: limit.toString(),
         ...(filters.status && { status: filters.status }),
         ...(filters.search && { search: filters.search }),
         ...(filters.dateFrom && { dateFrom: filters.dateFrom }),
@@ -91,9 +91,9 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
         reservations: data.data,
         pagination: {
           page: data.meta?.page || page,
-          limit: data.meta?.limit || limit,
+          per_page: data.meta?.limit || limit,
           total: data.meta?.total || 0,
-          totalPages: data.meta?.totalPages || 0,
+          last_page: data.meta?.totalPages || 0,
         },
         isLoading: false,
       });

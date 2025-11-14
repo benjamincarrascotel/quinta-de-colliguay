@@ -61,7 +61,7 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
       const data: AvailabilityRange = await response.json();
 
       set({
-        availability: data.data.dates,
+        availability: data.dates,
         isLoading: false,
       });
     } catch (error) {
@@ -102,7 +102,7 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
     }
 
     // If no block specified, check if any block is available
-    return dateAvailability.morningAvailable || dateAvailability.nightAvailable;
+    return dateAvailability.morning_available || dateAvailability.night_available;
   },
 
   clearError: () => {
