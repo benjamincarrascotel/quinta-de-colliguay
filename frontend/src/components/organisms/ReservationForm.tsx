@@ -78,16 +78,37 @@ const ReservationForm = () => {
   const adults = watch('adults');
   const children = watch('children');
 
-  // Calculate estimated price (simplified, should match backend logic)
-  const calculateEstimatedPrice = (): number => {
-    if (!selectedRange.from || !selectedRange.to) return 0;
+  // Calculate estimated price breakdown (simplified, should match backend logic)
+  const calculatePriceBreakdown = () => {
+    if (!selectedRange.from || !selectedRange.to) {
+      return {
+        adults: adults,
+        children: children,
+        full_days: 0,
+        half_days: 0,
+        adult_subtotal: 0,
+        child_subtotal: 0,
+        total: 0,
+      };
+    }
 
     const nights = differenceInDays(selectedRange.to, selectedRange.from);
     const adultPrice = 20000; // Should come from system parameters
     const childPrice = 10000;
 
     // Simplified calculation (backend has more complex logic with blocks)
-    return nights * (adults * adultPrice + children * childPrice);
+    const adult_subtotal = nights * adults * adultPrice;
+    const child_subtotal = nights * children * childPrice;
+
+    return {
+      adults: adults,
+      children: children,
+      full_days: nights,
+      half_days: 0,
+      adult_subtotal,
+      child_subtotal,
+      total: adult_subtotal + child_subtotal,
+    };
   };
 
   // Handle date selection from calendar
@@ -137,6 +158,8 @@ const ReservationForm = () => {
     clearError();
 
     try {
+      const breakdown = calculatePriceBreakdown();
+
       const reservationInput = {
         arrival_date: data.arrivalDate,
         arrival_block: data.arrivalBlock,
@@ -150,7 +173,7 @@ const ReservationForm = () => {
           whatsapp: data.whatsapp,
           city: data.city,
         },
-        estimated_amount: calculateEstimatedPrice(),
+        estimated_amount: breakdown.total,
         client_observations: data.observations || undefined,
       };
 
@@ -281,11 +304,7 @@ const ReservationForm = () => {
             </div>
 
             <PriceDisplay
-              adultPrice={20000}
-              childPrice={10000}
-              adults={adults}
-              children={children}
-              nights={selectedRange.from && selectedRange.to ? differenceInDays(selectedRange.to, selectedRange.from) : 0}
+              breakdown={calculatePriceBreakdown()}
             />
           </div>
         );
@@ -347,14 +366,11 @@ const ReservationForm = () => {
                 error={errors.city?.message}
                 required
               >
-                <Select {...register('city')}>
-                  <option value="">Selecciona tu ciudad</option>
-                  {CITIES.map((city) => (
-                    <option key={city} value={city}>
-                      {city}
-                    </option>
-                  ))}
-                </Select>
+                <Select
+                  {...register('city')}
+                  options={CITIES.map((city) => ({ value: city, label: city }))}
+                  placeholder="Selecciona tu ciudad"
+                />
               </FormField>
 
               <FormField
@@ -434,11 +450,7 @@ const ReservationForm = () => {
 
               {/* Price */}
               <PriceDisplay
-                adultPrice={20000}
-                childPrice={10000}
-                adults={adults}
-                children={children}
-                nights={selectedRange.from && selectedRange.to ? differenceInDays(selectedRange.to, selectedRange.from) : 0}
+                breakdown={calculatePriceBreakdown()}
               />
 
               {/* Terms */}
@@ -581,7 +593,7 @@ const ReservationForm = () => {
           endDate={selectedRange.to}
           onConfirm={handleBlockConfirm}
           onCancel={() => setShowBlockModal(false)}
-          estimatedPrice={calculateEstimatedPrice()}
+          estimatedPrice={calculatePriceBreakdown().total}
         />
       )}
     </div>

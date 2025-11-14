@@ -191,7 +191,7 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
 
       // Refresh list if needed
       const { fetchReservations, pagination } = get();
-      fetchReservations(pagination.page, pagination.limit);
+      fetchReservations(pagination.page, pagination.per_page);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al actualizar la reserva';
       set({ error: errorMessage, isLoading: false });
@@ -229,7 +229,7 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
 
       // Refresh list
       const { fetchReservations, pagination } = get();
-      fetchReservations(pagination.page, pagination.limit);
+      fetchReservations(pagination.page, pagination.per_page);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al confirmar la reserva';
       set({ error: errorMessage, isLoading: false });
@@ -267,7 +267,7 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
 
       // Refresh list
       const { fetchReservations, pagination } = get();
-      fetchReservations(pagination.page, pagination.limit);
+      fetchReservations(pagination.page, pagination.per_page);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al cancelar la reserva';
       set({ error: errorMessage, isLoading: false });
