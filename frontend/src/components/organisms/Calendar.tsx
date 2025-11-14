@@ -87,7 +87,14 @@ const Calendar = ({ onDateSelect, selectable = true, adminView = false }: Calend
   const handleDatesSet = useCallback((arg: DatesSetArg) => {
     const start = startOfMonth(arg.start);
     const end = endOfMonth(addMonths(arg.start, 1));
-    setCurrentRange({ start, end });
+
+    // Only update if the range actually changed to prevent infinite loop
+    setCurrentRange((prev) => {
+      if (prev.start.getTime() === start.getTime() && prev.end.getTime() === end.getTime()) {
+        return prev;
+      }
+      return { start, end };
+    });
   }, []);
 
   // Handle date click (single date selection)
