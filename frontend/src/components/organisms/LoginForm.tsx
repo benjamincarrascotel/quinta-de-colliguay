@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import Input from '../atoms/Input';
-import Button from '../atoms/Button';
-import Alert from '../atoms/Alert';
+import { Input } from '../atoms/Input';
+import { Button } from '../atoms/Button';
+import { Alert } from '../atoms/Alert';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),

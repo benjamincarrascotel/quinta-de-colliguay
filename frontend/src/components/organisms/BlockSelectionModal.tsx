@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { format, differenceInDays } from 'date-fns';
 import { es } from 'date-fns/locale';
-import Button from '../atoms/Button';
-import Card from '../molecules/Card';
+import { Button } from '../atoms/Button';
+import { Card } from '../molecules/Card';
 
 interface BlockSelectionModalProps {
   isOpen: boolean;

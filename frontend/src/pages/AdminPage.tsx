@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
-import Button from '../components/atoms/Button';
-import Card from '../components/molecules/Card';
+import { Button } from '../components/atoms/Button';
+import { Card } from '../components/molecules/Card';
 
 const AdminPage = () => {
   const navigate = useNavigate();

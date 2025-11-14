@@ -6,7 +6,7 @@ import { DateSelectArg, EventContentArg, DatesSetArg } from '@fullcalendar/core'
 import esLocale from '@fullcalendar/core/locales/es';
 import { startOfMonth, endOfMonth, addMonths, format, parseISO, differenceInDays, addDays } from 'date-fns';
 import { useAvailabilityStore } from '../../stores/availabilityStore';
-import Spinner from '../atoms/Spinner';
+import { Spinner } from '../atoms/Spinner';
 import './Calendar.css';
 
 interface CalendarProps {

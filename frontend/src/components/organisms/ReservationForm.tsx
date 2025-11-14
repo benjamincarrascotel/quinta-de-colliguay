@@ -8,14 +8,14 @@ import { useAvailabilityStore } from '../../stores/availabilityStore';
 import { useReservationStore } from '../../stores/reservationStore';
 import Calendar from './Calendar';
 import BlockSelectionModal from './BlockSelectionModal';
-import GuestCounter from '../molecules/GuestCounter';
-import PriceDisplay from '../molecules/PriceDisplay';
-import FormField from '../molecules/FormField';
-import Button from '../atoms/Button';
-import Alert from '../atoms/Alert';
-import Card from '../molecules/Card';
-import Select from '../atoms/Select';
-import { CITIES } from '../../utils/constants';
+import { GuestCounter } from '../molecules/GuestCounter';
+import { PriceDisplay } from '../molecules/PriceDisplay';
+import { FormField } from '../molecules/FormField';
+import { Button } from '../atoms/Button';
+import { Alert } from '../atoms/Alert';
+import { Card } from '../molecules/Card';
+import { Select } from '../atoms/Select';
+import { CHILEAN_CITIES as CITIES } from '../../utils/constants';
 
 // Validation schema
 const reservationSchema = z.object({

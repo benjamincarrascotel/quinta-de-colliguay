@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import ReservationForm from '../components/organisms/ReservationForm';
-import Card from '../components/molecules/Card';
-import InfoPanel from '../components/molecules/InfoPanel';
+import { Card } from '../components/molecules/Card';
+import { InfoPanel } from '../components/molecules/InfoPanel';
 
 const HomePage = () => {
   const navigate = useNavigate();
