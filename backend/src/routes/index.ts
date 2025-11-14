@@ -7,6 +7,7 @@ import { validate } from '../middlewares/validate';
 import { authenticate } from '../middlewares/auth';
 import { publicLimiter, createReservationLimiter } from '../middlewares/rateLimiter';
 import { CreateReservationDto, UpdateReservationDto, ConfirmReservationDto, CancelReservationDto } from '../dtos/reservationDtos';
+import { asyncHandler } from '../utils/asyncHandler';
 
 const router = Router();
 
@@ -15,17 +16,17 @@ const router = Router();
 // ============================================
 
 // Availability
-router.get('/availability', publicLimiter, availabilityController.getAvailability);
+router.get('/availability', publicLimiter, asyncHandler(availabilityController.getAvailability.bind(availabilityController)));
 
 // Parameters
-router.get('/parameters', publicLimiter, parametersController.getParameters);
+router.get('/parameters', publicLimiter, asyncHandler(parametersController.getParameters.bind(parametersController)));
 
 // Create reservation request
 router.post(
   '/requests',
   createReservationLimiter,
   validate(CreateReservationDto),
-  reservationController.createRequest
+  asyncHandler(reservationController.createRequest.bind(reservationController))
 );
 
 // ============================================
@@ -33,17 +34,17 @@ router.post(
 // ============================================
 
 // List reservations
-router.get('/admin/requests', authenticate, adminReservationController.list);
+router.get('/admin/requests', authenticate, asyncHandler(adminReservationController.list.bind(adminReservationController)));
 
 // Get reservation detail
-router.get('/admin/requests/:id', authenticate, adminReservationController.show);
+router.get('/admin/requests/:id', authenticate, asyncHandler(adminReservationController.show.bind(adminReservationController)));
 
 // Update reservation
 router.patch(
   '/admin/requests/:id',
   authenticate,
   validate(UpdateReservationDto),
-  adminReservationController.update
+  asyncHandler(adminReservationController.update.bind(adminReservationController))
 );
 
 // Confirm reservation
@@ -51,7 +52,7 @@ router.post(
   '/admin/requests/:id/confirm',
   authenticate,
   validate(ConfirmReservationDto),
-  adminReservationController.confirm
+  asyncHandler(adminReservationController.confirm.bind(adminReservationController))
 );
 
 // Cancel reservation
@@ -59,13 +60,13 @@ router.post(
   '/admin/requests/:id/cancel',
   authenticate,
   validate(CancelReservationDto),
-  adminReservationController.cancel
+  asyncHandler(adminReservationController.cancel.bind(adminReservationController))
 );
 
 // Download calendar (.ics)
-router.get('/admin/requests/:id/calendar', authenticate, adminReservationController.downloadCalendar);
+router.get('/admin/requests/:id/calendar', authenticate, asyncHandler(adminReservationController.downloadCalendar.bind(adminReservationController)));
 
 // Export CSV
-router.get('/admin/requests/export/csv', authenticate, adminReservationController.exportCsv);
+router.get('/admin/requests/export/csv', authenticate, asyncHandler(adminReservationController.exportCsv.bind(adminReservationController)));
 
 export default router;

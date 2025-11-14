@@ -68,8 +68,16 @@ const ReservationForm = () => {
   } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
     defaultValues: {
+      arrivalDate: '',
+      arrivalBlock: 'night',
+      departureDate: '',
+      departureBlock: 'morning',
       adults: 20,
       children: 0,
+      name: '',
+      email: '',
+      whatsapp: '',
+      city: '',
       observations: '',
       acceptTerms: false,
     },
