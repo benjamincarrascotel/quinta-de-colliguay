@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { DateAvailability, AvailabilityRange } from '../types';
+import { DateAvailability } from '../types';
 import { format } from 'date-fns';
 
 interface DateRange {
@@ -58,10 +58,19 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
         throw new Error('Error al obtener disponibilidad');
       }
 
-      const data: AvailabilityRange = await response.json();
+      const result = await response.json();
+      const data = result.data; // Unwrap the API response
+
+      // Transform camelCase to snake_case
+      const transformedDates: DateAvailability[] = data.dates.map((d: any) => ({
+        date: d.date,
+        morning_available: d.morningAvailable,
+        night_available: d.nightAvailable,
+        reservation_id: d.reservationId,
+      }));
 
       set({
-        availability: data.dates,
+        availability: transformedDates,
         isLoading: false,
       });
     } catch (error) {

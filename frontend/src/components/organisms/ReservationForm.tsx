@@ -67,6 +67,7 @@ const ReservationForm = () => {
     reset,
   } = useForm<ReservationFormData>({
     resolver: zodResolver(reservationSchema),
+    mode: 'onChange',
     defaultValues: {
       arrivalDate: '',
       arrivalBlock: 'night',
@@ -85,6 +86,7 @@ const ReservationForm = () => {
 
   const adults = watch('adults');
   const children = watch('children');
+  const city = watch('city');
 
   // Calculate estimated price breakdown (simplified, should match backend logic)
   const calculatePriceBreakdown = () => {
@@ -331,6 +333,7 @@ const ReservationForm = () => {
 
             <div className="space-y-4">
               <FormField
+                type="custom"
                 label="Nombre completo"
                 error={errors.name?.message}
                 required
@@ -344,6 +347,7 @@ const ReservationForm = () => {
               </FormField>
 
               <FormField
+                type="custom"
                 label="Email"
                 error={errors.email?.message}
                 required
@@ -357,6 +361,7 @@ const ReservationForm = () => {
               </FormField>
 
               <FormField
+                type="custom"
                 label="WhatsApp"
                 error={errors.whatsapp?.message}
                 required
@@ -370,18 +375,21 @@ const ReservationForm = () => {
               </FormField>
 
               <FormField
+                type="custom"
                 label="Ciudad"
                 error={errors.city?.message}
                 required
               >
                 <Select
                   {...register('city')}
+                  value={city}
                   options={CITIES.map((city) => ({ value: city, label: city }))}
                   placeholder="Selecciona tu ciudad"
                 />
               </FormField>
 
               <FormField
+                type="custom"
                 label="Observaciones (opcional)"
                 error={errors.observations?.message}
               >

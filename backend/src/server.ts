@@ -15,6 +15,9 @@ const app = express();
 // MIDDLEWARES
 // ============================================
 
+// Trust proxy for rate limiting and IP detection
+app.set('trust proxy', true);
+
 // Security
 app.use(helmet());
 
