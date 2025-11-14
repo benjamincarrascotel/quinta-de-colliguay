@@ -85,7 +85,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
               type="email"
               placeholder="admin@quintacolliguay.cl"
               {...register('email')}
-              error={errors.email?.message}
+              variant={errors.email?.message ? "error" : "default"}
               disabled={isSubmitting}
             />
           </div>
@@ -100,7 +100,7 @@ const LoginForm = ({ onSuccess }: LoginFormProps) => {
               type="password"
               placeholder="••••••••"
               {...register('password')}
-              error={errors.password?.message}
+              variant={errors.password?.message ? "error" : "default"}
               disabled={isSubmitting}
             />
           </div>

@@ -98,7 +98,7 @@ export const useAvailabilityStore = create<AvailabilityState>((set, get) => ({
     }
 
     if (block) {
-      return dateAvailability[`${block}Available`] as boolean;
+      return dateAvailability[`${block}_available` as keyof typeof dateAvailability] as boolean;
     }
 
     // If no block specified, check if any block is available

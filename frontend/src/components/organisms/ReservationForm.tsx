@@ -91,7 +91,7 @@ const ReservationForm = () => {
   };
 
   // Handle date selection from calendar
-  const handleDateSelect = (start: Date, end: Date) => {
+  const handleDateSelect = () => {
     setShowBlockModal(true);
   };
 
@@ -138,10 +138,10 @@ const ReservationForm = () => {
 
     try {
       const reservationInput = {
-        arrivalDate: data.arrivalDate,
-        arrivalBlock: data.arrivalBlock,
-        departureDate: data.departureDate,
-        departureBlock: data.departureBlock,
+        arrival_date: data.arrivalDate,
+        arrival_block: data.arrivalBlock,
+        departure_date: data.departureDate,
+        departure_block: data.departureBlock,
         adults: data.adults,
         children: data.children,
         client: {
@@ -150,8 +150,8 @@ const ReservationForm = () => {
           whatsapp: data.whatsapp,
           city: data.city,
         },
-        estimatedAmount: calculateEstimatedPrice(),
-        clientObservations: data.observations || undefined,
+        estimated_amount: calculateEstimatedPrice(),
+        client_observations: data.observations || undefined,
       };
 
       await createReservation(reservationInput);
@@ -241,7 +241,8 @@ const ReservationForm = () => {
                   Adultos (requerido mínimo 20)
                 </label>
                 <GuestCounter
-                  value={adults}
+            label="Adultos"
+            value={adults}
                   onChange={(value) => setValue('adults', value)}
                   min={20}
                   max={60 - children}
@@ -256,7 +257,8 @@ const ReservationForm = () => {
                   Niños (hasta 10 años)
                 </label>
                 <GuestCounter
-                  value={children}
+            label="Niños (hasta 10 años)"
+            value={children}
                   onChange={(value) => setValue('children', value)}
                   min={0}
                   max={60 - adults}
@@ -528,7 +530,7 @@ const ReservationForm = () => {
 
       {/* Error Alert */}
       {reservationError && (
-        <Alert variant="error" className="mb-6" onClose={clearError}>
+        <Alert variant="error" className="mb-6" onDismiss={clearError} dismissible={true}>
           {reservationError}
         </Alert>
       )}

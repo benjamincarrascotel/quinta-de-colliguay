@@ -70,36 +70,36 @@ const HomePage = () => {
             <InfoPanel
               title="Capacidad"
               items={[
-                'Mínimo: 20 adultos',
-                'Máximo: 60 personas total',
-                'Niños hasta 10 años',
+                { title: 'Mínimo', description: '20 adultos' },
+                { title: 'Máximo', description: '60 personas total' },
+                { title: 'Niños', description: 'hasta 10 años' },
               ]}
             />
 
             <InfoPanel
               title="Precios"
               items={[
-                'Adulto: $20.000/día',
-                'Niño: $10.000/día',
-                'Medio día: 50% tarifa',
+                { title: 'Adulto', description: '$20.000/día' },
+                { title: 'Niño', description: '$10.000/día' },
+                { title: 'Medio día', description: '50% tarifa' },
               ]}
             />
 
             <InfoPanel
               title="Estadía"
               items={[
-                'Mínimo: 2 noches',
-                'Check-in: Mañana o Noche',
-                'Buffer de limpieza incluido',
+                { title: 'Mínimo', description: '2 noches' },
+                { title: 'Check-in', description: 'Mañana o Noche' },
+                { title: 'Buffer', description: 'de limpieza incluido' },
               ]}
             />
 
             <InfoPanel
               title="Ubicación"
               items={[
-                'Colliguay',
-                'Región de Valparaíso',
-                'Entorno natural',
+                { title: 'Ciudad', description: 'Colliguay' },
+                { title: 'Región', description: 'de Valparaíso' },
+                { title: 'Entorno', description: 'natural' },
               ]}
             />
           </div>

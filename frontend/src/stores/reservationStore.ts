@@ -91,9 +91,9 @@ export const useReservationStore = create<ReservationState>((set, get) => ({
         reservations: data.data,
         pagination: {
           page: data.meta?.page || page,
-          per_page: data.meta?.limit || limit,
+          per_page: data.meta?.per_page || limit,
           total: data.meta?.total || 0,
-          last_page: data.meta?.totalPages || 0,
+          last_page: data.meta?.last_page || 0,
         },
         isLoading: false,
       });
