@@ -1,0 +1,393 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+cd "$REPO_ROOT"
+
+load_env_file() {
+    local env_file="${1:-.env}"
+    if [[ -f "$env_file" ]]; then
+        set -a
+        # shellcheck disable=SC1090
+        source "$env_file"
+        set +a
+    fi
+}
+
+require_env_var() {
+    local var_name="$1"
+    if [[ -z "${!var_name:-}" ]]; then
+        echo "❌ Environment variable $var_name is not set. Configure it in your .env." >&2
+        exit 1
+    fi
+}
+
+load_env_file ".env"
+
+DOCKER_LARAVEL_SERVICE_NAME="${DOCKER_LARAVEL_SERVICE_NAME:-app}"
+CPANEL_ZIP_NAME="controlmantencion.zip"
+
+laravel_exec() {
+    docker compose exec "$DOCKER_LARAVEL_SERVICE_NAME" "$@"
+}
+
+laravel_exec_no_tty() {
+    docker compose exec -T "$DOCKER_LARAVEL_SERVICE_NAME" "$@"
+}
+
+ready_to_cpanel() {
+    local DOCKER_COMPOSE_CMD="docker compose --env-file .env.cpanel"
+
+    echo "🗑️  Deep cleaning Node/Vite caches..."
+    rm -rf node_modules/.vite .vite
+
+    echo "🧽 Cleaning local artifacts..."
+    rm -f public/hot
+    rm -rf public/build
+
+    echo "🧹 Cleaning bootstrap/cache files..."
+    if [[ -d bootstrap/cache ]]; then
+        find bootstrap/cache -type f ! -name '.gitignore' -delete
+    fi
+
+    echo "🏗️  Ensuring base PHP image exists..."
+    if ! docker image inspect laravel_base_php:latest >/dev/null 2>&1; then
+        echo "   ↳ Building laravel_base_php image..."
+        docker compose --profile base-only build base
+    else
+        echo "   ↳ laravel_base_php image already present."
+    fi
+
+    echo "🔌 Starting Docker containers..."
+    $DOCKER_COMPOSE_CMD up -d
+
+    echo "📦 Installing Composer dependencies (production)..."
+    docker compose --env-file .env.cpanel run --rm \
+        -v "$PWD/vendor:/var/www/html/vendor" \
+        --entrypoint=sh "$DOCKER_LARAVEL_SERVICE_NAME" -lc '\
+            set -e; \
+            apk add --no-cache git unzip >/dev/null 2>&1 || true; \
+            git config --global --add safe.directory /var/www/html || true; \
+            export COMPOSER_ALLOW_SUPERUSER=1; \
+            export COMPOSER_MAX_PARALLEL_HTTP=1; \
+            export COMPOSER_CACHE_DIR=/tmp/composer-cache; \
+            composer clear-cache; \
+            composer install --no-interaction --no-dev --prefer-dist -o || \
+            composer install --no-interaction --no-dev --prefer-source -o \
+        '
+
+    echo "🔎 Checking vendor/autoload.php..."
+    if [[ ! -f vendor/autoload.php ]]; then
+        echo "❌ vendor/autoload.php missing after composer install"
+        exit 1
+    fi
+
+    echo "🔑 Generating application key..."
+    docker compose --env-file .env.cpanel run --rm \
+        -v "$PWD/vendor:/var/www/html/vendor" \
+        --entrypoint=php "$DOCKER_LARAVEL_SERVICE_NAME" artisan key:generate --force
+
+    echo "📦 Installing NPM dependencies (Node/Vite service)..."
+    $DOCKER_COMPOSE_CMD run --rm --entrypoint="npm" vite ci --no-audit --no-fund
+
+    echo "🏗️  Building assets with Vite..."
+    $DOCKER_COMPOSE_CMD run --rm --entrypoint="npm" vite run build -- --mode cpanel
+
+    echo "🔎 Checking Vite manifest..."
+    mkdir -p public/build
+    if [[ -f public/build/.vite/manifest.json && ! -f public/build/manifest.json ]]; then
+        echo "📄 Fixing manifest (.vite → build root)"
+        cp public/build/.vite/manifest.json public/build/manifest.json
+    fi
+    if [[ ! -f public/build/manifest.json ]]; then
+        echo "❌ public/build/manifest.json not found. Aborting."
+        exit 1
+    fi
+
+    echo "🧹 Clearing Laravel caches..."
+    docker compose --env-file .env.cpanel run --rm \
+        -v "$PWD/vendor:/var/www/html/vendor" \
+        --entrypoint=php "$DOCKER_LARAVEL_SERVICE_NAME" artisan view:clear || true
+    docker compose --env-file .env.cpanel run --rm \
+        -v "$PWD/vendor:/var/www/html/vendor" \
+        --entrypoint=php "$DOCKER_LARAVEL_SERVICE_NAME" artisan route:clear || true
+    docker compose --env-file .env.cpanel run --rm \
+        -v "$PWD/vendor:/var/www/html/vendor" \
+        --entrypoint=php "$DOCKER_LARAVEL_SERVICE_NAME" artisan config:clear || true
+
+    echo "🧽 Cleaning runtime files (preserving directories)..."
+    while IFS= read -r path; do
+        if [[ -d "$path" ]]; then
+            find "$path" -type f ! -name '.gitignore' -delete
+        fi
+    done <<'EOF'
+storage/framework/cache
+storage/framework/cache/data
+storage/framework/views
+storage/framework/sessions
+storage/logs
+EOF
+
+    echo "🧱 Ensuring runtime directory structure..."
+    mkdir -p storage/framework/cache storage/framework/cache/data storage/framework/views \
+        storage/framework/sessions storage/logs bootstrap/cache
+    for p in storage/framework/cache storage/framework/cache/data storage/framework/views \
+        storage/framework/sessions storage/logs bootstrap/cache; do
+        if [[ ! -f "$p/.gitignore" ]]; then
+            printf "*\n!.gitignore\n" >"$p/.gitignore"
+        fi
+    done
+
+    echo "✅ Local build ready for production deployment."
+}
+
+zip_to_cpanel() {
+    echo "📦 Packaging for cPanel deployment..."
+    zip -r9X "$CPANEL_ZIP_NAME" . \
+        -x "./.env" "./.env.example" "./.env.prod.example" "./.env.cpanel" \
+        -x "./.git/*" "./.github/*" "./.gitattributes" "./.gitmodules" \
+        -x "./docker/*" "./docker-compose.yml" \
+        -x "./node_modules/*" \
+        -x "./tests/*" \
+        -x "./public/hot" \
+        -x "./public/storage/*" \
+        -x "./.htaccess" "./public/.htaccess"
+    echo "✅ $CPANEL_ZIP_NAME ready for upload."
+}
+
+init_cpanel() {
+    echo "🚀 Initializing application in cPanel..."
+    cd ~/controlmantencion
+    if [[ -f htaccess ]]; then
+        echo "📄 Copying .htaccess to public/ directory..."
+        cp htaccess ~/public_html/controlmantencion/.htaccess
+    fi
+    echo "🧹 Clearing Laravel caches..."
+    /opt/cpanel/ea-php82/root/usr/bin/php artisan view:clear
+    /opt/cpanel/ea-php82/root/usr/bin/php artisan route:clear
+    /opt/cpanel/ea-php82/root/usr/bin/php artisan config:clear
+    echo "✅ Application initialized successfully in cPanel."
+}
+
+setup_cpanel_ssh() {
+    echo "🔐 Setting up cPanel SSH key..."
+    echo ""
+    echo "📋 This command:"
+    echo "   1. Copies the SSH key into ~/.ssh/"
+    echo "   2. Sets permissions (600)"
+    echo "   3. Tests the SSH connection"
+    echo ""
+
+    if [[ ! -f "id_rsa_controlmantencion" ]]; then
+        cat <<'MSG'
+❌ Error: id_rsa_controlmantencion is not located at the project root.
+
+Download the SSH key from Google Drive:
+📥 https://drive.google.com/file/d/1_1lMeGTOm1Me-sH4VkR-9-XEHkNTbNVF/view?usp=drive_link
+
+Place it in the project root directory:
+   cp ~/Downloads/id_rsa_controlmantencion ./id_rsa_controlmantencion
+MSG
+        exit 1
+    fi
+
+    mkdir -p ~/.ssh
+    echo "📥 Copying SSH key to ~/.ssh/..."
+    cp id_rsa_controlmantencion ~/.ssh/id_rsa_controlmantencion
+    echo "✅ SSH key copied."
+
+    echo "🔒 Setting permissions (chmod 600)..."
+    chmod 600 ~/.ssh/id_rsa_controlmantencion
+    echo "✅ Permissions set correctly."
+
+    require_env_var "CPANEL_PORT"
+    require_env_var "CPANEL_USER"
+    require_env_var "CPANEL_HOST"
+
+    echo ""
+    echo "🧪 Testing SSH connection to cPanel..."
+    if ssh -i ~/.ssh/id_rsa_controlmantencion -p "${CPANEL_PORT}" \
+        -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new \
+        "${CPANEL_USER}@${CPANEL_HOST}" "echo '✅ SSH connection successful!'" 2>/dev/null; then
+        echo ""
+        echo "🎉 Setup complete! You can now use: task deploy-to-cpanel"
+    else
+        echo ""
+        echo "⚠️  SSH connection test failed. Please verify:"
+        echo "   - The SSH key file exists as id_rsa_controlmantencion"
+        echo "   - Your network allows SSH to port ${CPANEL_PORT}"
+        exit 1
+    fi
+}
+
+upload_zip_to_cpanel() {
+    require_env_var "CPANEL_SSH_KEY"
+    require_env_var "CPANEL_USER"
+    require_env_var "CPANEL_HOST"
+    require_env_var "CPANEL_PORT"
+    require_env_var "CPANEL_REMOTE_PATH"
+
+    echo "🚀 Starting upload-only workflow to cPanel..."
+    echo "📋 Configuration:"
+    echo "   SSH Key: ${CPANEL_SSH_KEY}"
+    echo "   User: ${CPANEL_USER}@${CPANEL_HOST}:${CPANEL_PORT}"
+    echo "   Remote Path: ${CPANEL_REMOTE_PATH}"
+    echo ""
+
+    echo "📤 Uploading ${CPANEL_ZIP_NAME} to cPanel..."
+    scp -i "${CPANEL_SSH_KEY}" -P "${CPANEL_PORT}" "${CPANEL_ZIP_NAME}" \
+        "${CPANEL_USER}@${CPANEL_HOST}:${CPANEL_REMOTE_PATH}/"
+    echo "✅ ZIP uploaded successfully."
+
+    echo "🔧 Extracting and initializing on cPanel..."
+    ssh -i "${CPANEL_SSH_KEY}" -p "${CPANEL_PORT}" \
+        "${CPANEL_USER}@${CPANEL_HOST}" <<EOF
+cd "${CPANEL_REMOTE_PATH}" && \
+    echo '📦 Extracting ${CPANEL_ZIP_NAME}...' && \
+    unzip -o -q "${CPANEL_ZIP_NAME}" && \
+    echo '✅ ZIP extracted successfully.' && \
+    echo '🧹 Running init-cpanel...' && \
+    make init-cpanel && \
+    echo '✅ Deployment complete!'
+EOF
+}
+
+deploy_to_cpanel() {
+    require_env_var "CPANEL_SSH_KEY"
+    require_env_var "CPANEL_USER"
+    require_env_var "CPANEL_HOST"
+    require_env_var "CPANEL_PORT"
+    require_env_var "CPANEL_REMOTE_PATH"
+
+    echo "🚀 Starting automated deployment to cPanel..."
+    echo "📋 Configuration:"
+    echo "   SSH Key: ${CPANEL_SSH_KEY}"
+    echo "   User: ${CPANEL_USER}@${CPANEL_HOST}:${CPANEL_PORT}"
+    echo "   Remote Path: ${CPANEL_REMOTE_PATH}"
+    echo ""
+
+    ready_to_cpanel
+    zip_to_cpanel
+    upload_zip_to_cpanel
+}
+
+down() {
+    docker compose down
+}
+
+up_detached() {
+    docker compose up -d
+}
+
+fresh_detached() {
+    echo "♻️  Destroying containers, images, and cached deps..."
+    destroy
+    echo "🚀 Re-deploying local environment..."
+    deploy_env local
+}
+
+artisan() {
+    laravel_exec php artisan "$@"
+}
+
+clear_cache() {
+    echo "🧹 Clearing application cache..."
+    laravel_exec_no_tty php artisan view:clear
+    laravel_exec_no_tty php artisan route:clear
+    laravel_exec_no_tty php artisan config:clear
+}
+
+migrate() {
+    laravel_exec php artisan migrate
+}
+
+migrate_fresh() {
+    laravel_exec php artisan migrate:fresh
+}
+
+run_seeder() {
+    laravel_exec php artisan db:seed
+}
+
+php_linter() {
+    laravel_exec ./vendor/bin/pint
+}
+
+js_linter() {
+    npx eslint --fix .
+}
+
+destroy() {
+    echo "🔥 Stopping containers..."
+    docker compose down || true
+    echo "🔥 Deleting all containers, images, and volumes..."
+    docker compose down --rmi all -v || true
+    echo "🗑️  Cleanup complete."
+}
+
+deploy_env() {
+    local environment="${1:-local}"
+    shift || true
+    "$SCRIPT_DIR/deploy/deploy.sh" "$environment" "$@"
+}
+
+usage() {
+    cat <<'EOF'
+Usage: bash scripts/task <command> [arguments]
+
+Commands:
+  ready-to-cpanel        Prepares the app for cPanel deployment
+  zip-to-cpanel          Generates the ZIP ready to upload to cPanel
+  setup-cpanel-ssh       Configures the SSH key and tests the connection
+  deploy-to-cpanel       Runs ready + zip + upload automatically
+  upload-zip-to-cpanel   Uploads an existing ZIP and runs remote init
+  init-cpanel            Initializes the app inside the cPanel server
+
+  down                   Runs docker compose down
+  up-detached            Runs docker compose up -d
+  fresh-detached         Runs destroy + deploy local for a clean rebuild
+  artisan <args>         Runs php artisan inside the container
+  clear-cache            Clears Laravel caches
+  migrate                Runs migrations
+  migrate-fresh          migrate:fresh
+  run-seeder             Runs db:seed
+
+  php-linter             Runs Pint inside the container
+  js-linter              Runs ESLint locally
+
+  destroy                Cleans containers, images, and local dependencies
+  deploy <env>           Invokes scripts/deploy/deploy.sh (local|dev|prod)
+EOF
+}
+
+COMMAND="${1:-}"
+if [[ -z "$COMMAND" ]]; then
+    usage
+    exit 1
+fi
+shift || true
+
+case "$COMMAND" in
+    ready-to-cpanel) ready_to_cpanel "$@" ;;
+    zip-to-cpanel) zip_to_cpanel "$@" ;;
+    setup-cpanel-ssh) setup_cpanel_ssh "$@" ;;
+    deploy-to-cpanel) deploy_to_cpanel "$@" ;;
+    upload-zip-to-cpanel) upload_zip_to_cpanel "$@" ;;
+    init-cpanel) init_cpanel "$@" ;;
+    down) down "$@" ;;
+    up-detached) up_detached "$@" ;;
+    fresh-detached) fresh_detached "$@" ;;
+    artisan) artisan "$@" ;;
+    clear-cache) clear_cache "$@" ;;
+    migrate) migrate "$@" ;;
+    migrate-fresh) migrate_fresh "$@" ;;
+    run-seeder) run_seeder "$@" ;;
+    php-linter) php_linter "$@" ;;
+    js-linter) js_linter "$@" ;;
+    destroy) destroy "$@" ;;
+    deploy) deploy_env "$@" ;;
+    *) echo "Comando desconocido: $COMMAND" >&2; usage; exit 1 ;;
+esac

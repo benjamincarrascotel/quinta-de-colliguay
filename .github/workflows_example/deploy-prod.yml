@@ -1,0 +1,53 @@
+# .github/workflows/deploy-prod.yml
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: SolidBaseTemplate-PROD  # Use GitHub environment for production (requires approval)
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # Load the private key (the one whose PUBLIC half is added as a Deploy Key in GitHub)
+      - name: Start SSH agent and add GitHub key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.GH_DEPLOY_KEY }}
+
+      - name: Deploy to Production VM
+        run: |
+          gcloud compute ssh ${{ secrets.PROD_VM_SSH_USER }}@${{ secrets.PROD_VM_NAME }} \
+            --zone=${{ secrets.PROD_VM_ZONE }} \
+            --ssh-flag="-A" \
+            --command="
+              set -euo pipefail
+              cd ${{ secrets.PROD_APP_DIRECTORY }} &&
+              git fetch origin &&
+              git reset --hard HEAD &&
+              git checkout ${{ github.ref_name }} &&
+              git reset --hard origin/${{ github.ref_name }} &&
+              chmod +x scripts/deploy/deploy.sh &&
+              ./scripts/deploy/deploy.sh prod
+            "
+
+      - name: Deployment Summary
+        run: |
+          echo '✅ Production deployment completed successfully!'
+          echo '📁 Deployed from branch: ${{ github.ref_name }}'
+          echo '📁 Deployed to: ${{ secrets.PROD_APP_DIRECTORY }}'
+          echo '⚠️  Remember to verify the application is working correctly'

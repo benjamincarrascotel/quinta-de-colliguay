@@ -1,0 +1,28 @@
+#!/usr/bin/env sh
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+CONFIG_FILE="$REPO_ROOT/.config/commitlint.config.cjs"
+FORMATTER_FILE="$REPO_ROOT/.config/commitlint-friendly-formatter.mjs"
+
+# Detect message file (supports --file - / STDIN)
+MSG_FILE="${1:-}"
+if [ -z "$MSG_FILE" ] || [ "$MSG_FILE" = "-" ]; then
+  MSG_FILE="$(git rev-parse --git-path COMMIT_EDITMSG)"
+fi
+
+set +e
+OUT="$(
+  npx --no -- commitlint \
+    --config "$CONFIG_FILE" \
+    --format "$FORMATTER_FILE" \
+    --color false \
+    --edit "$MSG_FILE" 2>&1
+)"
+CODE=$?
+set -e
+
+if [ "$CODE" -ne 0 ]; then
+  printf '%s\n' "$OUT" 1>&2
+fi
+
+exit "$CODE"

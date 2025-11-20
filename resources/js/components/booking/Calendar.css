@@ -1,0 +1,301 @@
+/* ======================================================================
+   FULLCALENDAR CUSTOM STYLES - QUINTA DE COLLIGUAY
+   ====================================================================== */
+
+/* ----------------------------------------------------------------------
+   1. CSS VARIABLES - Color System
+   ---------------------------------------------------------------------- */
+
+:root {
+  /* Day state colors */
+  --cal-past: #f9fafb;               /* gray-50 - past days */
+
+  /* Theme colors (forest theme) */
+  --cal-forest-50: #f0fdf4;
+  --cal-forest-200: #bbf7d0;
+  --cal-forest-300: #86efac;
+  --cal-forest-700: #15803d;
+  --cal-forest-800: #166534;
+  --cal-forest-900: #14532d;
+
+  /* Border and text colors */
+  --cal-border: #e5e7eb;             /* gray-200 */
+  --cal-text: #374151;               /* gray-700 */
+  --cal-text-light: #9ca3af;         /* gray-400 */
+}
+
+/* ----------------------------------------------------------------------
+   2. HEADER & TOOLBAR
+   ---------------------------------------------------------------------- */
+
+.fc .fc-toolbar {
+  margin-bottom: 1.5rem;
+}
+
+.fc .fc-toolbar-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--cal-forest-900);
+  text-transform: capitalize;
+}
+
+/* ----------------------------------------------------------------------
+   3. BUTTONS
+   ---------------------------------------------------------------------- */
+
+.fc .fc-button {
+  background-color: var(--cal-forest-700);
+  border-color: var(--cal-forest-700);
+  color: white;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  text-transform: capitalize;
+  transition: all 0.2s;
+}
+
+.fc .fc-button:hover {
+  background-color: var(--cal-forest-800);
+  border-color: var(--cal-forest-800);
+}
+
+.fc .fc-button:focus {
+  box-shadow: 0 0 0 3px rgba(21, 128, 61, 0.3);
+}
+
+.fc .fc-button:disabled {
+  background-color: var(--cal-forest-300);
+  border-color: var(--cal-forest-300);
+  opacity: 0.5;
+}
+
+.fc .fc-button-active {
+  background-color: var(--cal-forest-900);
+  border-color: var(--cal-forest-900);
+}
+
+/* ----------------------------------------------------------------------
+   4. DAY HEADERS (Mon, Tue, Wed, etc.)
+   ---------------------------------------------------------------------- */
+
+.fc .fc-col-header-cell {
+  background-color: var(--cal-forest-50);
+  border-color: var(--cal-forest-200);
+  padding: 0.75rem;
+  font-weight: 600;
+  color: var(--cal-forest-700);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+/* ----------------------------------------------------------------------
+   5. DAY CELLS - BASE STYLES
+   Priority Level: BASE (lowest)
+   ---------------------------------------------------------------------- */
+
+.fc .fc-daygrid-day {
+  border-color: var(--cal-border);
+  transition: all 0.15s ease-in-out;
+}
+
+.fc .fc-daygrid-day:hover {
+  background-color: var(--cal-forest-50);
+  cursor: pointer;
+}
+
+/* Day Numbers */
+.fc .fc-daygrid-day-number {
+  padding: 0.5rem;
+  font-weight: 500;
+  color: var(--cal-text);
+}
+
+/* ----------------------------------------------------------------------
+   6. DAY CELLS - SPECIAL STATES (using dayCellClassNames)
+
+   Applied via dayCellClassNames in Calendar.tsx
+   Note: Today's yellow background is applied via dayCellDidMount, not CSS
+   ---------------------------------------------------------------------- */
+
+/* Past days - subtle gray background */
+.fc .fc-daygrid-day.calendar-past {
+  background-color: var(--cal-past);
+}
+
+/* ----------------------------------------------------------------------
+   7. OUT-OF-MONTH DAYS (days from prev/next month shown in current month)
+   Priority Level: LOW
+   ---------------------------------------------------------------------- */
+
+.fc .fc-day-other {
+  opacity: 0.8;
+}
+
+.fc .fc-day-other .fc-daygrid-day-number {
+  color: var(--cal-text-light);
+}
+
+/* ----------------------------------------------------------------------
+   8. BACKGROUND EVENTS - BASE
+   Priority Level: MEDIUM
+
+   Background events paint the entire day cell.
+   Applied via events array in Calendar.tsx with display: 'background'
+   ---------------------------------------------------------------------- */
+
+.fc .fc-event {
+  border-radius: 0.375rem;
+  border-width: 1px;
+  margin: 2px;
+  padding: 2px;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+/* CRITICAL: Remove FullCalendar's default white overlay that desaturates colors */
+.fc .fc-event .fc-bg {
+  opacity: 0 !important;
+}
+
+.fc .fc-event:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.fc .fc-daygrid-event {
+  white-space: normal;
+}
+
+/* ----------------------------------------------------------------------
+   9. SELECTION HIGHLIGHT (when dragging to select range)
+   Priority Level: HIGH
+   ---------------------------------------------------------------------- */
+
+.fc .fc-highlight {
+  background-color: #dcfce7;
+}
+
+/* ----------------------------------------------------------------------
+   10. EVENT DOTS & MORE LINK (when too many events)
+   ---------------------------------------------------------------------- */
+
+.fc .fc-daygrid-event-dot {
+  border-width: 3px;
+}
+
+.fc .fc-daygrid-more-link {
+  color: var(--cal-forest-700);
+  font-weight: 600;
+}
+
+.fc .fc-daygrid-more-link:hover {
+  background-color: var(--cal-forest-50);
+}
+
+/* ----------------------------------------------------------------------
+   11. POPOVER (when clicking "more" link)
+   ---------------------------------------------------------------------- */
+
+.fc .fc-popover {
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border-color: var(--cal-forest-200);
+}
+
+.fc .fc-popover-header {
+  background-color: var(--cal-forest-700);
+  color: white;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+}
+
+.fc .fc-popover-body {
+  padding: 0.5rem;
+}
+
+/* ----------------------------------------------------------------------
+   12. SCROLLBARS
+   ---------------------------------------------------------------------- */
+
+.fc-scroller {
+  overflow-y: auto;
+}
+
+.fc-scroller::-webkit-scrollbar {
+  width: 8px;
+}
+
+.fc-scroller::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+  border-radius: 4px;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb {
+  background-color: var(--cal-forest-700);
+  border-radius: 4px;
+}
+
+.fc-scroller::-webkit-scrollbar-thumb:hover {
+  background-color: var(--cal-forest-900);
+}
+
+/* ----------------------------------------------------------------------
+   13. RESPONSIVE STYLES
+   ---------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .fc .fc-toolbar {
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .fc .fc-toolbar-title {
+    font-size: 1.25rem;
+  }
+
+  .fc .fc-button {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+
+  .fc .fc-col-header-cell {
+    font-size: 0.625rem;
+    padding: 0.5rem 0.25rem;
+  }
+
+  .fc .fc-daygrid-day-number {
+    font-size: 0.75rem;
+    padding: 0.25rem;
+  }
+}
+
+/* ======================================================================
+   NOTES ON COLOR SYSTEM
+   ======================================================================
+
+   Color Application Methods:
+
+   1. BASE: Default white background (FullCalendar default)
+
+   2. dayCellClassNames (CSS classes):
+      - .calendar-past → Gray background (#f9fafb) for past days
+
+   3. dayCellDidMount (Direct DOM manipulation):
+      - Today → Yellow background (#fef9c3) via inline style
+      - Availability → Colors applied directly to day cells (future feature)
+
+   4. Background Events (Selection only):
+      - Selected range → Green (#22c55e)
+      - Start date → Light green (#4ade80)
+      - Hover preview → Very light green (#d1fae5)
+
+   Why This Approach:
+
+   - dayCellDidMount gives full control over colors without opacity issues
+   - Background events used ONLY for selection (green colors)
+   - No conflicts between availability colors and selection colors
+   - Single !important needed (.fc-event .fc-bg) to remove FullCalendar's
+     default white overlay that desaturates background event colors
+
+====================================================================== */

@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+
+set -e
+echo "▶ Pre-commit: lint-staged" 1>&2
+npx lint-staged --config .config/lint-staged.config.cjs --quiet

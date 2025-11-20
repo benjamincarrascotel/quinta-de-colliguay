@@ -1,0 +1,12 @@
+{
+  "preset": "laravel",
+  "rules": {
+    "single_quote": true
+  },
+  "exclude": [
+    "bootstrap",
+    "storage",
+    "vendor",
+    "resources/js/ziggy.js"
+  ]
+}

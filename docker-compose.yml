@@ -1,112 +1,126 @@
-version: '3.8'
-
 services:
-  # ============================================
-  # PostgreSQL Database
-  # ============================================
-  postgres:
-    image: postgres:16-alpine
-    container_name: quinta-postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
-      POSTGRES_DB: quinta_colliguay
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+  base:
+    build:
+      context: .
+      dockerfile: docker/base/Dockerfile
+    image: laravel_base_php
+    container_name: laravel_base_build
+    profiles:
+      - base-only
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/app/Dockerfile
+    image: laravel_app
+    container_name: ${DOCKER_LARAVEL_SERVICE_NAME}
+    working_dir: /var/www/html
     ports:
-      - "5432:5432"
+      - "${APP_PORT:-8000}:${APP_PORT:-8000}"
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      APP_URL: ${APP_URL}
+      DB_CONNECTION: ${DB_CONNECTION}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      # Xdebug configuration
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
+      XDEBUG_CONFIG: client_host=host.docker.internal
+      PHP_IDE_CONFIG: serverName=docker
+    volumes:
+      - ./:/var/www/html:rw
+      - vendor_shared:/var/vendor-cache       # vendor volume decoupled from host tree
+      - ./docker/base/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "php artisan about >/dev/null 2>&1 || php -v >/dev/null 2>&1"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    networks:
-      - quinta-network
-
-  # ============================================
-  # Backend (Node.js + Express + Prisma)
-  # ============================================
-  backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: quinta-backend
-    environment:
-      NODE_ENV: production
-      PORT: 8000
-      DATABASE_URL: postgresql://postgres:secret@postgres:5432/quinta_colliguay?schema=public
-      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
-      ALLOWED_ORIGINS: http://localhost,http://localhost:80,http://localhost:3000,http://localhost:3001
-      # Email config
-      SMTP_HOST: ${SMTP_HOST:-smtp.mailtrap.io}
-      SMTP_PORT: ${SMTP_PORT:-2525}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
-      MAIL_FROM_ADDRESS: ${MAIL_FROM_ADDRESS:-reservas@quintacolliguay.cl}
-      MAIL_FROM_NAME: "Quinta de Colliguay"
-      # Admin
-      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@quintacolliguay.cl}
-      ADMIN_WHATSAPP: ${ADMIN_WHATSAPP:-912345678}
-      # Reservation params
-      RESERVATION_ADULT_PRICE: 20000
-      RESERVATION_CHILD_PRICE: 10000
-      RESERVATION_MIN_ADULTS: 20
-      RESERVATION_MAX_TOTAL: 60
-      RESERVATION_MIN_NIGHTS: 2
-      RESERVATION_BUFFER_HALF_DAY: true
-      TZ: America/Santiago
+      retries: 10
+      start_period: 30s
     depends_on:
-      postgres:
+      db:
         condition: service_healthy
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./backend/logs:/app/logs
-    networks:
-      - quinta-network
-    command: sh -c "npx prisma migrate deploy && npm start"
 
-  # ============================================
-  # Frontend (React + Vite)
-  # ============================================
-  frontend:
+  vite:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_BASE_URL: /api/v1
-    container_name: quinta-frontend
+      context: .
+      dockerfile: docker/vite/Dockerfile
+    working_dir: /app
+    tty: true
+    restart: "no"
     ports:
-      - "3000:80"
-    depends_on:
-      - backend
-    networks:
-      - quinta-network
-
-  # ============================================
-  # Reverse Proxy (Caddy)
-  # ============================================
-  caddy:
-    image: caddy:2-alpine
-    container_name: quinta-caddy
-    ports:
-      - "80:80"
-      - "443:443"
+      - "5173:5173"
+      - "24678:24678"
+    environment:
+      APP_ENV: ${APP_ENV:-local}           # Controls whether to run dev server or build
+      DB_HOST: ${DB_HOST}
+      DB_CONNECTION: ${DB_CONNECTION}
+      DB_PORT: ${DB_PORT}
+      HOST: 0.0.0.0
+      VITE_HMR_HOST: ${VITE_HMR_HOST}
     volumes:
-      - ./docker/Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./:/app:rw
+      - vite_node_modules:/app/node_modules
+      - vendor_shared:/var/vendor-cache      # share PHP vendor cache
     depends_on:
-      - frontend
-      - backend
-    networks:
-      - quinta-network
+      app:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+    tmpfs:
+      - /tmp
+      - /root/.cache
+
+  db:
+    image: postgres:16-alpine
+    container_name: ${DOCKER_DB_SERVICE_NAME}
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "${DB_PORT:-5432}:${DB_PORT:-5432}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  nginx:
+    build: ./nginx
+    container_name: nginx_proxy
+    environment:
+      APP_URL: ${APP_URL:-}
+      SSL_DOMAIN: ${SSL_DOMAIN:-}
+    volumes:
+      - letsencrypt:/etc/letsencrypt:rw
+      - certbot-www:/var/www/certbot:rw
+      - ./nginx/runtime/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - 80:80
+      - 443:443
+    depends_on:
+      - app
+      - vite
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: certbot
+    volumes:
+      - letsencrypt:/etc/letsencrypt:rw
+      - certbot-www:/var/www/certbot:rw
+    profiles:
+      - certbot
 
 volumes:
-  postgres_data:
-  caddy_data:
-  caddy_config:
-
-networks:
-  quinta-network:
-    driver: bridge
+  pgdata:
+  vite_node_modules:
+  vendor_shared:
+  letsencrypt:
+  certbot-www:
